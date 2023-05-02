@@ -33,10 +33,10 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdio.h>
 #include <stdlib.h>
 
-#define DATA_SIZE 62500000
+#define DATA_SIZE 6250000
 
 //Set IP address of FPGA
-#define IP_ADDR 0x0A01D498
+#define IP_ADDR 0x0A488A12
 #define BOARD_NUMBER 0
 #define ARP 0x0A01D498
 
@@ -77,7 +77,7 @@ int main(int argc, char **argv) {
     auto fileBuf = xcl::read_binary_file(binaryFile);
     cl::Program::Binaries bins{{fileBuf.data(), fileBuf.size()}};
     int valid_device = 0;
-    for (unsigned int i = 0; i < devices.size(); i++) {
+    for (unsigned int i = 1; i < devices.size(); i++) {
         auto device = devices[i];
         // Creating Context and Command Queue for selected Device
         OCL_CHECK(err, context = cl::Context({device}, NULL, NULL, NULL, &err));
@@ -175,7 +175,7 @@ int main(int argc, char **argv) {
     double durationUs = 0.0;
     uint32_t timeInSeconds = 10;
     //set destination IP address
-    uint32_t baseIpAddr = 0x0A01D479; //alveo1a
+    uint32_t baseIpAddr = 0x0A488A11; //alveo1a
     //uint32_t baseIpAddr = 0x0A01D499; //fpga server
     //uint32_t baseIpAddr = 0x0A01D46E; //alveo0
 

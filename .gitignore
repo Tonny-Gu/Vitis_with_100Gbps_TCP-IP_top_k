@@ -1,0 +1,12 @@
+build
+.ipcache
+
+_x*
+packaged_*
+tmp_*
+build_dir*
+
+host/host
+
+*.log
+*.jou

@@ -49,7 +49,7 @@
 set __TCLID "(Post-linking QSFP0 Tcl hook): "
 
 set __ip_list [get_property ip_repo_paths [current_project]]
-lappend __ip_list /home/yangz0e/Desktop/Vitis_with_100Gbps_TCP-IP_top_k/build/fpga-network-stack/iprepo
+lappend __ip_list /home/gut0a/Vitis_with_100Gbps_TCP-IP_top_k/build/fpga-network-stack/iprepo
 set_property ip_repo_paths $__ip_list [current_project]
 update_ip_catalog
 
