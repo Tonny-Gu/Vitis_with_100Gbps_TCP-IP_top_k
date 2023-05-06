@@ -37,7 +37,7 @@ module pkt_sender (
         
         output wire [511:0]  m_axis_tx_data_TDATA,
         output reg           m_axis_tx_data_TVALID,
-        output reg [63:0] 	 m_axis_tx_data_TKEEP,
+        output reg [64:0] 	 m_axis_tx_data_TKEEP,
         output reg         	 m_axis_tx_data_TLAST,
         input wire           m_axis_tx_data_TREADY        
     ); 

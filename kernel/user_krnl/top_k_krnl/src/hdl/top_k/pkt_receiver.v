@@ -74,6 +74,7 @@ module pkt_receiver (
     end
 
     always @(*) begin
+        // signal should be only valid for 1 clock
         payload_rx_TVALID = s_axis_rx_data_TVALID & (~prev_rx_data_TVALID);
     end
 

@@ -143,14 +143,75 @@ module tcp_top_loopback #(parameter IS_SIM = 0)
         .pkt_tx_TREADY(pkt_TREADY)
     );
 
+    parameter NUM_SLOTS = 4;
+
+    wire [(512 + 88) * NUM_SLOTS - 1 : 0] slots_rx_TDATA;
+    wire [NUM_SLOTS - 1 : 0] slots_rx_TVALID;
+    wire [NUM_SLOTS - 1 : 0] slots_rx_TREADY;
+    wire [(512 + 16) * NUM_SLOTS - 1 : 0] slots_tx_TDATA;
+    wire [NUM_SLOTS - 1 : 0] slots_tx_TVALID;
+    wire [NUM_SLOTS - 1 : 0] slots_tx_TREADY;
+
+    wire [512+88-1:0] loopback_TDATA;
+    wire loopback_TVALID;
+    wire loopback_TREADY;
+    wire [512+16-1:0] final_tx_TDATA;
+    wire final_tx_TVALID;
+    wire final_tx_TREADY;
+
+    wire soft_rst;
+
+    omni_dispatcher #(
+        .NUM_SLOTS(NUM_SLOTS)
+    ) omni_dispatcher_inst (
+        .clk(clk),
+        .rst(reset),
+        .rx_TDATA(pkt_TDATA),
+        .rx_TVALID(pkt_TVALID),
+        .rx_TREADY(pkt_TREADY),
+        .tx_TDATA({loopback_TDATA, slots_rx_TDATA}),
+        .tx_TVALID({loopback_TVALID, slots_rx_TVALID}),
+        .tx_TREADY({loopback_TREADY, slots_rx_TREADY}),
+        // .tx_TREADY({1'b1, 1'b0, 1'b0}),
+        .soft_rst(soft_rst)
+    );
+
+    genvar i;
+    generate
+        for (i = 0; i < NUM_SLOTS; i = i + 1) begin
+            omni_slot omni_slot_inst(
+                .clk(clk),
+                .rst(soft_rst),
+                .rx_TDATA(slots_rx_TDATA[(i + 1) * (512+88) - 1 -: 512+88]),
+                .rx_TVALID(slots_rx_TVALID[i]),
+                .rx_TREADY(slots_rx_TREADY[i]),
+                .tx_TDATA(slots_tx_TDATA[(i + 1) * (512+16) - 1 -: 512+16]),
+                .tx_TVALID(slots_tx_TVALID[i]),
+                .tx_TREADY(slots_tx_TREADY[i])
+            );
+        end
+    endgenerate
+
+    omni_collector #(
+        .NUM_SLOTS(NUM_SLOTS)
+    ) omni_collector_inst (
+        .rx_TDATA({loopback_TDATA[512+16-1:0], slots_tx_TDATA}),
+        .rx_TVALID({loopback_TVALID, slots_tx_TVALID}),
+        .rx_TREADY({loopback_TREADY, slots_tx_TREADY}),
+        .tx_TDATA(final_tx_TDATA),
+        .tx_TVALID(final_tx_TVALID),
+        .tx_TREADY(final_tx_TREADY)
+        // .tx_TREADY(1'b1)
+    );
+
     assign pkt_new_TDATA = {pkt_TDATA[512+32-1:88], pkt_TDATA[512+88-1:512]};
 
     pkt_sender pkt_sender_inst(
         .clk(clk),
         .rst(reset),
-        .pkt_rx_TDATA(pkt_new_TDATA),
-        .pkt_rx_TVALID(pkt_TVALID),
-        .pkt_rx_TREADY(pkt_TREADY),
+        .pkt_rx_TDATA({16'd0, final_tx_TDATA}), // module will override packet size
+        .pkt_rx_TVALID(final_tx_TVALID),
+        .pkt_rx_TREADY(final_tx_TREADY),
         .s_axis_tx_status_TDATA(s_axis_tx_status_TDATA),
         .s_axis_tx_status_TVALID(s_axis_tx_status_TVALID),
         .s_axis_tx_status_TREADY(s_axis_tx_status_TREADY),
