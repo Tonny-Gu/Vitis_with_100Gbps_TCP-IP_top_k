@@ -1,7 +1,8 @@
 import asyncio
+import time
 
-NUM_CLIENTS = 128
-NUM_SLOTS = 4
+NUM_CLIENTS = 8
+NUM_SLOTS = 2
 
 def gen_cmd(values: list):
     pad_size = 16 - len(values)
@@ -14,6 +15,7 @@ def gen_header(rst_field: bool, val_field: int):
 
 async def slot_main(client_id: int, slot_id: int, n_repeat: int, rst: bool):
     reader, writer = await asyncio.open_connection('10.72.138.18', 2888)
+    # reader, writer = await asyncio.open_connection('10.72.138.15', 2888)
     if rst:
         cmd = gen_cmd([gen_header(True, NUM_CLIENTS)])
     else:
@@ -22,10 +24,10 @@ async def slot_main(client_id: int, slot_id: int, n_repeat: int, rst: bool):
     for r in range(n_repeat):
         writer.write(cmd)
         await writer.drain()
-        # print("[%s] Sent: %s" % (conn_id, req.hex()))
+        # print("[R%s][W%s][S%s] Sent: %s" % (r, client_id, slot_id, cmd.hex()))
         
         rsp = await reader.read(64)
-        print("[R%s][W%s][S%s] Recv: %s" % (r, client_id, slot_id, rsp.hex()))
+        # print("[R%s][W%s][S%s] Recv: %s" % (r, client_id, slot_id, rsp.hex()))
     writer.close()
     await writer.wait_closed()
 
@@ -35,7 +37,16 @@ async def worker_main(client_id: int, n_repeat: int):
 async def main():
     await slot_main(0, 0, 1, True)
     await asyncio.sleep(0.5)
-    await asyncio.gather(*[worker_main(i, 3) for i in range(NUM_CLIENTS)])
+    start = time.time()
+    await asyncio.gather(*[worker_main(i, 100) for i in range(NUM_CLIENTS)])
+    end = time.time()
+    print(end - start)
 
-asyncio.run(main())
+for n_workers in (1, 2, 4, 8, 16, 32, 64, 128):
+    print("n_worker: %s" % n_workers)
+    NUM_CLIENTS = n_workers
+    asyncio.run(main())
+
+# print("n_worker: %s" % NUM_CLIENTS)
+# asyncio.run(main())
 # print(commands)

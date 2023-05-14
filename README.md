@@ -1,38 +1,41 @@
-<h2>Top K for Alveo with Vitis 100Gbps TCP Networking</h2>
+# OmniReduce-P4 on FPGA
 
-This project provides a stream based integer top k sorting using a 100Gbps network. It is achieved by expanding the [100Gbps TCP/IP stack repository](https://github.com/fpgasystems/Vitis_with_100Gbps_TCP-IP) with a custom user kernel.
+This project is built upon
 
-<h3>Top K User Kernel Design</h3>
+- [Top-K on FPGA](https://github.com/YangZiyi121/Vitis_with_100Gbps_TCP-IP_top_k)
+- [Vitis with 100Gbps TCP/IP](https://github.com/fpgasystems/Vitis_with_100Gbps_TCP-IP)
 
-This design refers to the paper [Histograms as a side effect of data movement for big data](https://dl.acm.org/doi/abs/10.1145/2588555.2612174)
+## File Structure
 
-![Architecture](/img/top_k_arch.png)
+- [kernel/user_krnl/top_k_krnl/src/hdl/top_k](kernel/user_krnl/top_k_krnl/src/hdl/top_k)/*.v: FPGA Kernel
+- [scripts/omni_worker.py](scripts/omni_worker.py): Software Worker
+- [scripts/omni_aggregator.py](scripts/omni_aggregator.py): Software Aggregator
+- [docs/slides.pdf](docs/slides.pdf): Slides
 
-<h3>Functionality</h3>
+## Build
 
-The kernel is able to accumulately sort 32-bit integers sent with TCP packets. The user needs to send TCP packets that are multiples of 64 bytes in size, since the dataline is 64 bytes. The kernel will return the accumulated top-K results. 
-
-For clearing the accumulation logic, the user should send a packet with 512-bit '1'.
-
-<h3>Build and Run</h3>
-
-**Clone the Repository**
-
-```
-git clone	
-```
-
-**Configure TCP Stack**
-
-```
+```bash
 mkdir build
 cd build
 cmake .. -DFDEV_NAME=u280 -DTCP_STACK_EN=1 -DTCP_STACK_RX_DDR_BYPASS_EN=1 
-make installip
+make installip -j
+cd ../
+make all TARGET=hw DEVICE=/opt/xilinx/platforms/xilinx_u280_xdma_201920_3/xilinx_u280_xdma_201920_3.xpfm USER_KRNL=top_k_krnl USER_KRNL_MODE=rtl NETH=4 -j
 ```
 
-**Create Design**
+## Launch
+
+```bash
+# Reset
+xbutil reset -d 0000:21:00.1
+
+# Load Kernel
+./host/host build_dir.hw.xilinx_u280_xdma_201920_3/network.xclbin
+
+# Launch Python Client
+python3 ./scripts/omni_worker.py
 ```
-cd ../
-make all TARGET=hw DEVICE=/opt/xilinx/platforms/xilinx_u280_xdma_201920_3/xilinx_u280_xdma_201920_3.xpfm USER_KRNL=top_k_krnl USER_KRNL_MODE=rtl NETH=4
-```
+
+Note: the default IP address of U280 is `10.72.138.18`. To change the IP address, you should modify [host/top_k_krnl/host.cpp](host/top_k_krnl/host.cpp) and recompile the host kernel.
+
+## 
